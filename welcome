@@ -1,0 +1,2839 @@
+<!DOCTYPE html>
+
+
+<html lang="zh">
+
+
+<head>
+
+
+    <meta charset="UTF-8">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <title>Enter The Key</title>
+
+
+    <style>
+
+
+        /* ---------- 全局重置 ---------- */
+
+
+        * {
+
+
+            margin: 0;
+
+
+            padding: 0;
+
+
+            box-sizing: border-box;
+
+
+        }
+
+
+        body {
+
+
+            background: #000;
+
+
+            overflow: hidden;
+
+
+            height: 100vh;
+
+
+            font-family: 'Courier New', monospace;
+
+
+            cursor: default;
+
+
+        }
+
+
+
+
+
+        /* ---------- 数字雨画布 ---------- */
+
+
+        #canvas {
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            z-index: 1;
+
+
+            display: block;
+
+
+            background: #000;
+
+
+        }
+
+
+
+
+
+        /* ---------- 输入界面覆盖层 ---------- */
+
+
+        #entry-overlay {
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            z-index: 100;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            align-items: center;
+
+
+            justify-content: center;
+
+
+            background: rgba(0, 0, 0, 0.75);
+
+
+            pointer-events: auto;
+
+
+            transition: opacity 0.8s ease;
+
+
+        }
+
+
+        #entry-overlay.hidden {
+
+
+            opacity: 0;
+
+
+            pointer-events: none;
+
+
+        }
+
+
+        #entry-overlay.locked {
+
+
+            pointer-events: none;
+
+
+        }
+
+
+
+
+
+        #entry-title {
+
+
+            color: #ff1111;
+
+
+            font-size: clamp(32px, 6vw, 70px);
+
+
+            font-weight: bold;
+
+
+            letter-spacing: 8px;
+
+
+            text-shadow: 0 0 20px #ff0000, 0 0 60px rgba(255,0,0,0.3);
+
+
+            margin-bottom: 30px;
+
+
+        }
+
+
+
+
+
+        #entry-box {
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            gap: 10px;
+
+
+        }
+
+
+
+
+
+        #entry-input {
+
+
+            background: rgba(10, 0, 0, 0.7);
+
+
+            border: 2px solid #ff1111;
+
+
+            color: #ff1111;
+
+
+            font-size: clamp(20px, 3vw, 40px);
+
+
+            padding: 10px 20px;
+
+
+            width: clamp(200px, 40vw, 400px);
+
+
+            font-family: 'Courier New', monospace;
+
+
+            outline: none;
+
+
+            letter-spacing: 2px;
+
+
+            transition: border-color 0.3s;
+
+
+        }
+
+
+        #entry-input:focus {
+
+
+            border-color: #ff4444;
+
+
+            box-shadow: 0 0 20px rgba(255,0,0,0.2);
+
+
+        }
+
+
+        #entry-input::placeholder {
+
+
+            color: #330000;
+
+
+            font-size: 0.7em;
+
+
+            letter-spacing: 1px;
+
+
+        }
+
+
+
+
+
+        #entry-confirm {
+
+
+            background: transparent;
+
+
+            border: 2px solid #ff1111;
+
+
+            color: #ff1111;
+
+
+            font-size: clamp(18px, 2.5vw, 30px);
+
+
+            padding: 10px 25px;
+
+
+            font-family: 'Courier New', monospace;
+
+
+            cursor: pointer;
+
+
+            transition: all 0.3s;
+
+
+            letter-spacing: 4px;
+
+
+            white-space: nowrap;
+
+
+        }
+
+
+        #entry-confirm:hover {
+
+
+            background: #ff1111;
+
+
+            color: #000;
+
+
+            box-shadow: 0 0 30px rgba(255,0,0,0.4);
+
+
+        }
+
+
+        #entry-confirm:active {
+
+
+            transform: scale(0.95);
+
+
+        }
+
+
+
+
+
+        #entry-sub {
+
+
+            color: #660000;
+
+
+            font-size: clamp(12px, 1.5vw, 18px);
+
+
+            margin-top: 20px;
+
+
+            letter-spacing: 2px;
+
+
+            transition: color 0.3s;
+
+
+        }
+
+
+
+
+
+        #entry-error {
+
+
+            display: none;
+
+
+        }
+
+
+
+
+
+        /* ---------- 主时间线文本容器 ---------- */
+
+
+        #text-container {
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            align-items: center;
+
+
+            justify-content: center;
+
+
+            z-index: 10;
+
+
+            pointer-events: none;
+
+
+            user-select: none;
+
+
+            text-align: center;
+
+
+            padding: 20px;
+
+
+        }
+
+
+        #main-text {
+
+
+            color: #ff1111;
+
+
+            font-size: clamp(32px, 10vw, 100px);
+
+
+            font-weight: bold;
+
+
+            line-height: 1.3;
+
+
+            letter-spacing: 6px;
+
+
+            text-shadow: 0 0 10px #ff0000, 0 0 30px #ff0000, 0 0 60px rgba(255,0,0,0.4);
+
+
+            transition: opacity 0.5s ease, transform 0.5s ease;
+
+
+            opacity: 0;
+
+
+            transform: scale(0.95);
+
+
+            animation: none;
+
+
+        }
+
+
+        #main-text.show {
+
+
+            opacity: 1;
+
+
+            transform: scale(1);
+
+
+        }
+
+
+        #main-text.grow {
+
+
+            animation: growOnce 3s ease-out forwards;
+
+
+        }
+
+
+        @keyframes growOnce {
+
+
+            0%   { transform: scale(1); }
+
+
+            100% { transform: scale(1.6); }
+
+
+        }
+
+
+        #main-text.flicker {
+
+
+            animation: fastFlicker 0.15s infinite alternate;
+
+
+        }
+
+
+        @keyframes fastFlicker {
+
+
+            0%   { opacity: 1; text-shadow: 0 0 10px #ff0000, 0 0 30px #ff0000, 0 0 60px rgba(255,0,0,0.6); }
+
+
+            25%  { opacity: 0.2; text-shadow: 0 0 2px #ff0000; }
+
+
+            50%  { opacity: 0.9; text-shadow: 0 0 20px #ff0000, 0 0 50px #ff0000; }
+
+
+            75%  { opacity: 0.1; text-shadow: none; }
+
+
+            100% { opacity: 1; text-shadow: 0 0 10px #ff0000, 0 0 30px #ff0000, 0 0 60px rgba(255,0,0,0.6); }
+
+
+        }
+
+
+        #main-text.glitch-text {
+
+
+            animation: textGlitch 0.08s infinite alternate !important;
+
+
+        }
+
+
+        @keyframes textGlitch {
+
+
+            0%   { transform: translate(-3px, 2px) scale(1.02); text-shadow: 3px 0 #ff0000, -3px 0 #00ff00; }
+
+
+            25%  { transform: translate(4px, -2px) scale(0.98); text-shadow: -4px 0 #ff00ff, 4px 0 #00ffff; }
+
+
+            50%  { transform: translate(-5px, 1px) scale(1.01); text-shadow: 5px 0 #ffff00, -5px 0 #ff0000; }
+
+
+            75%  { transform: translate(3px, 3px) scale(0.97); text-shadow: -3px 0 #00ff00, 3px 0 #ff00ff; }
+
+
+            100% { transform: translate(-4px, -2px) scale(1.03); text-shadow: 4px 0 #ff0000, -4px 0 #00ffff; }
+
+
+        }
+
+
+
+
+
+        /* 辅助元素 */
+
+
+        .old-console {
+
+
+            position: fixed;
+
+
+            top: 20px;
+
+
+            left: 20px;
+
+
+            color: #0a0303;
+
+
+            font-size: 12px;
+
+
+            z-index: 20;
+
+
+            font-family: 'Courier New', monospace;
+
+
+            letter-spacing: 1px;
+
+
+            user-select: none;
+
+
+            pointer-events: none;
+
+
+            transition: color 2s;
+
+
+        }
+
+
+        .old-console.blink { color: #1a0505; }
+
+
+        .deep-code {
+
+
+            position: fixed;
+
+
+            bottom: 5px;
+
+
+            left: 5px;
+
+
+            color: #0a0303;
+
+
+            font-size: 10px;
+
+
+            z-index: 20;
+
+
+            font-family: 'Courier New', monospace;
+
+
+            letter-spacing: 2px;
+
+
+            user-select: all;
+
+
+            opacity: 0.2;
+
+
+            pointer-events: none;
+
+
+        }
+
+
+        .credit {
+
+
+            position: fixed;
+
+
+            bottom: 15px;
+
+
+            right: 20px;
+
+
+            color: #0a0505;
+
+
+            font-size: 11px;
+
+
+            z-index: 20;
+
+
+            letter-spacing: 2px;
+
+
+            opacity: 0.2;
+
+
+            user-select: none;
+
+
+            pointer-events: none;
+
+
+        }
+
+
+
+
+
+        /* 音频唤醒 */
+
+
+        #audio-wake {
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            z-index: 999;
+
+
+            background: rgba(0,0,0,0.01);
+
+
+            color: transparent;
+
+
+            border: none;
+
+
+            cursor: default;
+
+
+            pointer-events: auto;
+
+
+        }
+
+
+
+
+
+        /* ---------- 最终错误文本 ---------- */
+
+
+        #final-error {
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            justify-content: center;
+
+
+            z-index: 200;
+
+
+            color: #ff1111;
+
+
+            font-size: clamp(40px, 8vw, 100px);
+
+
+            font-weight: bold;
+
+
+            text-shadow: 0 0 40px #ff0000, 0 0 80px rgba(255,0,0,0.5);
+
+
+            pointer-events: none;
+
+
+            opacity: 0;
+
+
+            transition: opacity 2s ease;
+
+
+            background: transparent;
+
+
+            font-family: 'Courier New', monospace;
+
+
+            letter-spacing: 8px;
+
+
+        }
+
+
+        #final-error.show {
+
+
+            opacity: 1;
+
+
+        }
+
+
+        #final-error::before {
+
+
+            content: '';
+
+
+            position: absolute;
+
+
+            top: 50%;
+
+
+            left: 50%;
+
+
+            transform: translate(-50%, -50%);
+
+
+            width: 80%;
+
+
+            height: 30%;
+
+
+            background: rgba(0, 0, 0, 0.6);
+
+
+            filter: blur(40px);
+
+
+            z-index: -1;
+
+
+            border-radius: 20px;
+
+
+        }
+
+
+    </style>
+
+
+</head>
+
+
+<body>
+
+
+
+
+
+    <!-- 透明按钮：唤醒音频 -->
+
+
+    <div id="audio-wake"></div>
+
+
+
+
+
+    <!-- 数字雨画布 -->
+
+
+    <canvas id="canvas"></canvas>
+
+
+
+
+
+    <!-- 最终错误显示 -->
+
+
+    <div id="final-error">You're not him</div>
+
+
+
+
+
+    <!-- 输入界面 -->
+
+
+    <div id="entry-overlay">
+
+
+        <div id="entry-title">Enter The Key</div>
+
+
+        <div id="entry-box">
+
+
+            <input type="text" id="entry-input" placeholder="..." autofocus>
+
+
+            <button id="entry-confirm">Confirm</button>
+
+
+        </div>
+
+
+        <div id="entry-sub">you only have 3 attempts</div>
+
+
+        <div id="entry-error"></div>
+
+
+    </div>
+
+
+
+
+
+    <!-- 主时间线文本（只有 main-text，没有 seed-text 和 hidden-coord） -->
+
+
+    <div id="text-container">
+
+
+        <div id="main-text"></div>
+
+
+    </div>
+
+
+
+
+
+    <!-- 辅助元素 -->
+
+
+    <div class="old-console" id="oldConsole">> 连接已建立 _</div>
+
+
+    <div class="deep-code">01001111 01101110 01100101 00100000 01110011 01100101 01100101 01100100</div>
+
+
+    <div class="credit">// ACCESS GRANTED //</div>
+
+
+
+
+
+    <script>
+
+
+        // ============================================================
+
+
+        //  0. 音效工具（保持不变）
+
+
+        // ============================================================
+
+
+        (function() {
+
+
+            let audioCtx = null;
+
+
+            let audioReady = false;
+
+
+
+
+
+            function wakeAudio() {
+
+
+                try {
+
+
+                    if (!audioCtx) {
+
+
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+
+                    }
+
+
+                    if (audioCtx.state === 'suspended') {
+
+
+                        audioCtx.resume();
+
+
+                    }
+
+
+                    audioReady = true;
+
+
+                    const wakeEl = document.getElementById('audio-wake');
+
+
+                    if (wakeEl) wakeEl.style.display = 'none';
+
+
+                } catch(e) {}
+
+
+            }
+
+
+            document.addEventListener('click', wakeAudio, { once: true });
+
+
+            document.addEventListener('touchstart', wakeAudio, { once: true });
+
+
+
+
+
+            window.forceWakeAudio = function() {
+
+
+                if (!audioReady) wakeAudio();
+
+
+                try {
+
+
+                    if (audioCtx && audioCtx.state === 'suspended') {
+
+
+                        audioCtx.resume();
+
+
+                        audioReady = true;
+
+
+                    }
+
+
+                } catch(e) {}
+
+
+                return audioReady;
+
+
+            };
+
+
+
+
+
+            function getCtx() {
+
+
+                if (!audioCtx) {
+
+
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+
+                }
+
+
+                if (audioCtx.state === 'suspended') {
+
+
+                    audioCtx.resume();
+
+
+                }
+
+
+                return audioCtx;
+
+
+            }
+
+
+
+
+
+            window.playBeep = function(freq, duration, volume, type) {
+
+
+                try {
+
+
+                    if (!audioReady) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    osc.type = type || 'sine';
+
+
+                    osc.frequency.value = freq || 800;
+
+
+                    gain.gain.setValueAtTime(volume || 0.15, ctx.currentTime);
+
+
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+
+                    osc.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc.start();
+
+
+                    osc.stop(ctx.currentTime + duration + 0.05);
+
+
+                } catch(e) {}
+
+
+            };
+
+
+
+
+
+            window.playSuccess = function() {
+
+
+                window.playBeep(880, 0.08, 0.25, 'sine');
+
+
+                setTimeout(() => window.playBeep(1100, 0.08, 0.20, 'sine'), 100);
+
+
+            };
+
+
+
+
+
+            window.playFail = function() {
+
+
+                window.playBeep(200, 0.25, 0.30, 'sawtooth');
+
+
+                setTimeout(() => window.playBeep(150, 0.20, 0.25, 'sawtooth'), 150);
+
+
+            };
+
+
+
+
+
+            window.playFinalError = function() {
+
+
+                try {
+
+
+                    window.forceWakeAudio();
+
+
+                    if (!audioReady) {
+
+
+                        window.forceWakeAudio();
+
+
+                        if (!audioReady) return;
+
+
+                    }
+
+
+                    const ctx = getCtx();
+
+
+
+
+
+                    const osc1 = ctx.createOscillator();
+
+
+                    const gain1 = ctx.createGain();
+
+
+                    osc1.type = 'square';
+
+
+                    osc1.frequency.value = 700;
+
+
+                    gain1.gain.setValueAtTime(0.35, ctx.currentTime);
+
+
+                    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+
+                    osc1.connect(gain1);
+
+
+                    gain1.connect(ctx.destination);
+
+
+                    osc1.start();
+
+
+                    osc1.stop(ctx.currentTime + 0.08);
+
+
+
+
+
+                    setTimeout(() => {
+
+
+                        try {
+
+
+                            const osc2 = ctx.createOscillator();
+
+
+                            const gain2 = ctx.createGain();
+
+
+                            osc2.type = 'square';
+
+
+                            osc2.frequency.value = 450;
+
+
+                            gain2.gain.setValueAtTime(0.30, ctx.currentTime + 0.1);
+
+
+                            gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1 + 0.12);
+
+
+                            osc2.connect(gain2);
+
+
+                            gain2.connect(ctx.destination);
+
+
+                            osc2.start(ctx.currentTime + 0.1);
+
+
+                            osc2.stop(ctx.currentTime + 0.1 + 0.12);
+
+
+                        } catch(e) {}
+
+
+                    }, 100);
+
+
+
+
+
+                } catch(e) {}
+
+
+            };
+
+
+
+
+
+            // ---- 其他音效 ----
+
+
+            window.playAppear = function() {
+
+
+                try {
+
+
+                    if (!audioReady) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    osc.type = 'sine';
+
+
+                    osc.frequency.setValueAtTime(80, ctx.currentTime);
+
+
+                    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.6);
+
+
+                    gain.gain.value = 0.12;
+
+
+                    osc.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc.start();
+
+
+                    osc.stop(ctx.currentTime + 0.6);
+
+
+                    setTimeout(() => window.playBeep(1400, 0.04, 0.15, 'sine'), 100);
+
+
+                    setTimeout(() => window.playBeep(1000, 0.04, 0.12, 'sine'), 250);
+
+
+                } catch(e) {}
+
+
+            };
+
+
+
+
+
+            let droneNode = null;
+
+
+            window.startDrone = function() {
+
+
+                try {
+
+
+                    if (!audioReady) wakeAudio();
+
+
+                    if (!audioReady) return;
+
+
+                    if (droneNode) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc1 = ctx.createOscillator();
+
+
+                    const osc2 = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    gain.gain.value = 0.08;
+
+
+                    osc1.type = 'sawtooth';
+
+
+                    osc1.frequency.value = 55;
+
+
+                    osc2.type = 'square';
+
+
+                    osc2.frequency.value = 77;
+
+
+                    osc1.connect(gain);
+
+
+                    osc2.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc1.start();
+
+
+                    osc2.start();
+
+
+                    droneNode = { osc1, osc2, gain };
+
+
+                    let vol = 0.08;
+
+
+                    const interval = setInterval(() => {
+
+
+                        if (!droneNode) { clearInterval(interval); return; }
+
+
+                        vol = 0.06 + Math.random() * 0.06;
+
+
+                        gain.gain.setTargetAtTime(vol, ctx.currentTime, 0.1);
+
+
+                    }, 500);
+
+
+                    droneNode.interval = interval;
+
+
+                } catch(e) {}
+
+
+            };
+
+
+            window.stopDrone = function() {
+
+
+                try {
+
+
+                    if (droneNode) {
+
+
+                        const { osc1, osc2, gain, interval } = droneNode;
+
+
+                        if (interval) clearInterval(interval);
+
+
+                        const ctx = getCtx();
+
+
+                        gain.gain.setTargetAtTime(0.001, ctx.currentTime, 0.3);
+
+
+                        setTimeout(() => {
+
+
+                            try { osc1.stop(); osc2.stop(); } catch(e) {}
+
+
+                        }, 300);
+
+
+                        droneNode = null;
+
+
+                    }
+
+
+                } catch(e) {}
+
+
+            };
+
+
+
+
+
+            let noiseNode = null;
+
+
+            window.startNoise = function() {
+
+
+                try {
+
+
+                    if (!audioReady) wakeAudio();
+
+
+                    if (!audioReady) return;
+
+
+                    if (noiseNode) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const bufferSize = ctx.sampleRate * 0.5;
+
+
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+
+
+                    const data = buffer.getChannelData(0);
+
+
+                    for (let i = 0; i < bufferSize; i++) {
+
+
+                        data[i] = (Math.random() * 2 - 1) * 0.3;
+
+
+                    }
+
+
+                    const source = ctx.createBufferSource();
+
+
+                    source.buffer = buffer;
+
+
+                    source.loop = true;
+
+
+                    const gain = ctx.createGain();
+
+
+                    gain.gain.value = 0.12;
+
+
+                    source.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    source.start();
+
+
+                    noiseNode = { source, gain };
+
+
+                } catch(e) {}
+
+
+            };
+
+
+            window.stopNoise = function() {
+
+
+                try {
+
+
+                    if (noiseNode) {
+
+
+                        const { source, gain } = noiseNode;
+
+
+                        const ctx = getCtx();
+
+
+                        gain.gain.setTargetAtTime(0.001, ctx.currentTime, 0.2);
+
+
+                        setTimeout(() => {
+
+
+                            try { source.stop(); } catch(e) {}
+
+
+                        }, 200);
+
+
+                        noiseNode = null;
+
+
+                    }
+
+
+                } catch(e) {}
+
+
+            };
+
+
+
+
+
+            window.playStartup = function() {
+
+
+                try {
+
+
+                    if (!audioReady) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    osc.type = 'sawtooth';
+
+
+                    osc.frequency.value = 80;
+
+
+                    gain.gain.value = 0.08;
+
+
+                    osc.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc.start();
+
+
+                    osc.stop(ctx.currentTime + 0.6);
+
+
+                    setTimeout(() => window.playBeep(1200, 0.05, 0.15, 'square'), 100);
+
+
+                    setTimeout(() => window.playBeep(900, 0.05, 0.12, 'square'), 300);
+
+
+                } catch(e) {}
+
+
+            };
+
+
+            window.playSwitch = function() {
+
+
+                window.playBeep(600, 0.06, 0.15, 'square');
+
+
+                setTimeout(() => window.playBeep(400, 0.06, 0.12, 'square'), 70);
+
+
+            };
+
+
+            window.playFlickerTick = function() {
+
+
+                window.playBeep(1200, 0.03, 0.10, 'square');
+
+
+            };
+
+
+            window.playReveal = function() {
+
+
+                try {
+
+
+                    if (!audioReady) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    osc.type = 'sine';
+
+
+                    osc.frequency.value = 110;
+
+
+                    gain.gain.value = 0.15;
+
+
+                    osc.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc.start();
+
+
+                    osc.stop(ctx.currentTime + 0.8);
+
+
+                    setTimeout(() => window.playBeep(440, 0.2, 0.15, 'sine'), 100);
+
+
+                    setTimeout(() => window.playBeep(660, 0.2, 0.12, 'sine'), 300);
+
+
+                    setTimeout(() => window.playBeep(880, 0.3, 0.10, 'sine'), 500);
+
+
+                } catch(e) {}
+
+
+            };
+
+
+            window.playBlackout = function() {
+
+
+                try {
+
+
+                    if (!audioReady) return;
+
+
+                    const ctx = getCtx();
+
+
+                    const osc = ctx.createOscillator();
+
+
+                    const gain = ctx.createGain();
+
+
+                    osc.type = 'sine';
+
+
+                    osc.frequency.value = 60;
+
+
+                    gain.gain.value = 0.08;
+
+
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+
+                    osc.connect(gain);
+
+
+                    gain.connect(ctx.destination);
+
+
+                    osc.start();
+
+
+                    osc.stop(ctx.currentTime + 0.5);
+
+
+                } catch(e) {}
+
+
+            };
+
+
+        })();
+
+
+
+
+
+        // ============================================================
+
+
+        //  1. 数字雨（颜色 200~255）
+
+
+        // ============================================================
+
+
+        (function() {
+
+
+            const canvas = document.getElementById('canvas');
+
+
+            const ctx = canvas.getContext('2d');
+
+
+            let width, height;
+
+
+
+
+
+            function resize() {
+
+
+                width = canvas.width = window.innerWidth;
+
+
+                height = canvas.height = window.innerHeight;
+
+
+                initColumns();
+
+
+            }
+
+
+            window.addEventListener('resize', resize);
+
+
+
+
+
+            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}|;:,.<>?/';
+
+
+            const fontSize = 20;
+
+
+            let columns = [];
+
+
+            let columnCount = 0;
+
+
+
+
+
+            function initColumns() {
+
+
+                columnCount = Math.floor(width / (fontSize * 1.2)) + 1;
+
+
+                columns = [];
+
+
+                for (let i = 0; i < columnCount; i++) {
+
+
+                    columns.push(Math.floor(Math.random() * height / fontSize));
+
+
+                }
+
+
+            }
+
+
+
+
+
+            let phase = 'rain';
+
+
+            let glitchIntensity = 0;
+
+
+
+
+
+            function drawRain() {
+
+
+                if (phase === 'blackout') {
+
+
+                    ctx.fillStyle = '#000';
+
+
+                    ctx.fillRect(0, 0, width, height);
+
+
+                    requestAnimationFrame(drawRain);
+
+
+                    return;
+
+
+                }
+
+
+
+
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+
+
+                ctx.fillRect(0, 0, width, height);
+
+
+
+
+
+                ctx.font = fontSize + 'px "Courier New", monospace';
+
+
+                ctx.textAlign = 'center';
+
+
+
+
+
+                for (let i = 0; i < columnCount; i++) {
+
+
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+
+
+                    const x = i * fontSize * 1.2 + fontSize / 2;
+
+
+                    const y = columns[i] * fontSize;
+
+
+
+
+
+                    const progress = columns[i] / (height / fontSize);
+
+
+                    const brightness = Math.min(0.9, progress * 0.5 + 0.15);
+
+
+                    const red = Math.floor(200 + 55 * brightness);
+
+
+                    ctx.fillStyle = `rgb(${red}, 0, 0)`;
+
+
+                    ctx.fillText(char, x, y);
+
+
+
+
+
+                    columns[i] += 0.3 + Math.random() * 0.5;
+
+
+                    if (columns[i] * fontSize > height) {
+
+
+                        columns[i] = -Math.random() * 10 - 2;
+
+
+                    }
+
+
+                }
+
+
+
+
+
+                if (phase === 'glitch') {
+
+
+                    for (let i = 0; i < 300 * glitchIntensity; i++) {
+
+
+                        const x = Math.random() * width;
+
+
+                        const y = Math.random() * height;
+
+
+                        const r = Math.floor(Math.random() * 255);
+
+
+                        const g = Math.floor(Math.random() * 255);
+
+
+                        const b = Math.floor(Math.random() * 255);
+
+
+                        const size = 2 + Math.random() * 8;
+
+
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.3 + 0.6 * glitchIntensity})`;
+
+
+                        ctx.fillRect(x, y, size, size);
+
+
+                    }
+
+
+                    for (let i = 0; i < 10 * glitchIntensity; i++) {
+
+
+                        const y = Math.random() * height;
+
+
+                        const h = 2 + Math.random() * 10;
+
+
+                        const r = Math.floor(Math.random() * 255);
+
+
+                        const g = Math.floor(Math.random() * 255);
+
+
+                        const b = Math.floor(Math.random() * 255);
+
+
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.2 * glitchIntensity})`;
+
+
+                        ctx.fillRect(0, y, width, h);
+
+
+                    }
+
+
+                    if (Math.random() < 0.1 * glitchIntensity) {
+
+
+                        const y = Math.random() * height;
+
+
+                        const offset = (Math.random() - 0.5) * 60 * glitchIntensity;
+
+
+                        ctx.drawImage(canvas, offset, 0, width, height, 0, 0, width, height);
+
+
+                    }
+
+
+                    if (Math.random() < 0.05 * glitchIntensity) {
+
+
+                        ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * glitchIntensity})`;
+
+
+                        ctx.fillRect(0, 0, width, height);
+
+
+                    }
+
+
+                }
+
+
+
+
+
+                requestAnimationFrame(drawRain);
+
+
+            }
+
+
+
+
+
+            resize();
+
+
+            drawRain();
+
+
+
+
+
+            window.setPhase = function(newPhase, intensity) {
+
+
+                phase = newPhase;
+
+
+                if (intensity !== undefined) glitchIntensity = intensity;
+
+
+            };
+
+
+            window.setGlitchIntensity = function(val) {
+
+
+                glitchIntensity = Math.min(1, Math.max(0, val));
+
+
+            };
+
+
+        })();
+
+
+
+
+
+        // ============================================================
+
+
+        //  2. 主时间线（已移除所有隐藏文本）
+
+
+        // ============================================================
+
+
+        function startTimeline() {
+
+
+            const mainText = document.getElementById('main-text');
+
+
+
+
+
+            function showText(html, callback) {
+
+
+                mainText.classList.remove('show', 'flicker', 'glitch-text', 'grow');
+
+
+                mainText.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+
+                mainText.innerHTML = html;
+
+
+                void mainText.offsetWidth;
+
+
+                mainText.classList.add('show');
+
+
+                if (callback) setTimeout(callback, 100);
+
+
+            }
+
+
+
+
+
+            function hideTextFade(callback) {
+
+
+                mainText.classList.remove('show', 'flicker', 'glitch-text', 'grow');
+
+
+                setTimeout(() => {
+
+
+                    if (callback) callback();
+
+
+                }, 500);
+
+
+            }
+
+
+
+
+
+            function hideTextImmediate() {
+
+
+                mainText.style.transition = 'none';
+
+
+                mainText.classList.remove('show', 'flicker', 'glitch-text', 'grow');
+
+
+                void mainText.offsetWidth;
+
+
+                mainText.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+
+            }
+
+
+
+
+
+            function switchText(html, callback) {
+
+
+                hideTextFade(() => {
+
+
+                    mainText.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+
+                    mainText.classList.remove('flicker', 'glitch-text', 'grow');
+
+
+                    mainText.innerHTML = html;
+
+
+                    void mainText.offsetWidth;
+
+
+                    mainText.classList.add('show');
+
+
+                    if (callback) setTimeout(callback, 100);
+
+
+                });
+
+
+            }
+
+
+
+
+
+            function startFlicker() { mainText.classList.add('flicker'); }
+
+
+            function stopFlicker() { mainText.classList.remove('flicker'); }
+
+
+            function startGrow() { mainText.classList.add('grow'); }
+
+
+            function stopGrow() { mainText.classList.remove('grow'); }
+
+
+            function startGlitchText() {
+
+
+                mainText.classList.remove('flicker', 'grow');
+
+
+                mainText.classList.add('glitch-text');
+
+
+            }
+
+
+            function stopGlitchText() {
+
+
+                mainText.classList.remove('glitch-text');
+
+
+            }
+
+
+
+
+
+            let flickerInterval = null;
+
+
+            function startFlickerSound() {
+
+
+                if (flickerInterval) clearInterval(flickerInterval);
+
+
+                if (window.playFlickerTick) window.playFlickerTick();
+
+
+                flickerInterval = setInterval(() => {
+
+
+                    if (window.playFlickerTick) window.playFlickerTick();
+
+
+                }, 300);
+
+
+            }
+
+
+            function stopFlickerSound() {
+
+
+                if (flickerInterval) {
+
+
+                    clearInterval(flickerInterval);
+
+
+                    flickerInterval = null;
+
+
+                }
+
+
+            }
+
+
+
+
+
+            // 时间线（只有主文本）
+
+
+            setTimeout(() => {
+
+
+                showText('Welcome here,<br>Admin');
+
+
+                if (window.playStartup) window.playStartup();
+
+
+                if (window.playAppear) window.playAppear();
+
+
+            }, 0);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                switchText('Do you still<br>remember that day?');
+
+
+                if (window.playSwitch) window.playSwitch();
+
+
+            }, 4000);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                hideTextFade();
+
+
+                if (window.setPhase) window.setPhase('rain');
+
+
+                if (window.playSwitch) window.playSwitch();
+
+
+            }, 8000);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                mainText.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+
+                mainText.classList.remove('show', 'flicker', 'glitch-text', 'grow');
+
+
+                mainText.innerHTML = 'THAT DAY<br>YOU KILLED 213 PLAYERS!';
+
+
+                void mainText.offsetWidth;
+
+
+                mainText.classList.add('show');
+
+
+                startFlicker();
+
+
+                startGrow();
+
+
+                startFlickerSound();
+
+
+                if (window.startDrone) window.startDrone();
+
+
+                if (window.setPhase) window.setPhase('rain');
+
+
+                if (window.playSwitch) window.playSwitch();
+
+
+            }, 11000);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                stopFlicker();
+
+
+                stopFlickerSound();
+
+
+                stopGrow();
+
+
+                startGlitchText();
+
+
+                if (window.startNoise) window.startNoise();
+
+
+                if (window.setPhase) {
+
+
+                    window.setPhase('glitch', 0.2);
+
+
+                    let intensity = 0.2;
+
+
+                    const interval = setInterval(() => {
+
+
+                        intensity += 0.16;
+
+
+                        if (intensity >= 1.0) {
+
+
+                            intensity = 1.0;
+
+
+                            clearInterval(interval);
+
+
+                        }
+
+
+                        if (window.setGlitchIntensity) {
+
+
+                            window.setGlitchIntensity(intensity);
+
+
+                        }
+
+
+                    }, 400);
+
+
+                }
+
+
+            }, 14000);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                hideTextImmediate();
+
+
+                stopGlitchText();
+
+
+                if (window.stopDrone) window.stopDrone();
+
+
+                if (window.stopNoise) window.stopNoise();
+
+
+                if (window.setPhase) window.setPhase('blackout');
+
+
+                if (window.playBlackout) window.playBlackout();
+
+
+            }, 19000);
+
+
+
+
+
+            setTimeout(() => {
+
+
+                if (window.setPhase) window.setPhase('rain');
+
+
+                mainText.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+
+                mainText.classList.remove('show', 'flicker', 'glitch-text', 'grow');
+
+
+                mainText.innerHTML = "It's time to<br>accept it, Admin";
+
+
+                void mainText.offsetWidth;
+
+
+                mainText.classList.add('show');
+
+
+                if (window.playReveal) window.playReveal();
+
+
+            }, 26000);
+
+
+
+
+
+            // 控制台伪变化
+
+
+            const consoleEl = document.getElementById('oldConsole');
+
+
+            setInterval(() => {
+
+
+                if (Math.random() < 0.1) {
+
+
+                    consoleEl.classList.toggle('blink');
+
+
+                    if (Math.random() < 0.05) {
+
+
+                        const msgs = [
+
+
+                            '> 连接已建立 _',
+
+
+                            '> 接收数据中... _',
+
+
+                            '> 未知信号源 _',
+
+
+                            '> 等待确认 _',
+
+
+                            '> 已连接 (延迟: 404ms) _',
+
+
+                            '> 历史记录加载中 _'
+
+
+                        ];
+
+
+                        consoleEl.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+
+
+                    }
+
+
+                }
+
+
+            }, 3000);
+
+
+        }
+
+
+
+
+
+        // ============================================================
+
+
+        //  3. 输入验证 + 三次尝试（不变）
+
+
+        // ============================================================
+
+
+        (function() {
+
+
+            const overlay = document.getElementById('entry-overlay');
+
+
+            const input = document.getElementById('entry-input');
+
+
+            const confirmBtn = document.getElementById('entry-confirm');
+
+
+            const subEl = document.getElementById('entry-sub');
+
+
+            const finalErrorEl = document.getElementById('final-error');
+
+
+            const titleEl = document.getElementById('entry-title');
+
+
+            const boxEl = document.getElementById('entry-box');
+
+
+
+
+
+            const CORRECT_KEY = 'truth';
+
+
+            let attempts = 3;
+
+
+            let locked = false;
+
+
+
+
+
+            function updateAttemptsDisplay() {
+
+
+                subEl.textContent = `you only have ${attempts} attempts`;
+
+
+            }
+
+
+
+
+
+            function handleFinalError() {
+
+
+                locked = true;
+
+
+                input.disabled = true;
+
+
+                confirmBtn.disabled = true;
+
+
+
+
+
+                titleEl.style.display = 'none';
+
+
+                boxEl.style.display = 'none';
+
+
+                subEl.style.display = 'none';
+
+
+
+
+
+                if (window.setPhase) window.setPhase('rain');
+
+
+
+
+
+                setTimeout(() => {
+
+
+                    finalErrorEl.classList.add('show');
+
+
+                    if (window.playFinalError) {
+
+
+                        window.playFinalError();
+
+
+                    }
+
+
+                }, 3000);
+
+
+            }
+
+
+
+
+
+            function handleError() {
+
+
+                if (window.playFail) window.playFail();
+
+
+                input.value = '';
+
+
+                attempts--;
+
+
+                updateAttemptsDisplay();
+
+
+                if (attempts <= 0) {
+
+
+                    handleFinalError();
+
+
+                } else {
+
+
+                    input.focus();
+
+
+                }
+
+
+            }
+
+
+
+
+
+            function handleSuccess() {
+
+
+                if (locked) return;
+
+
+                if (window.playSuccess) window.playSuccess();
+
+
+                setTimeout(() => {
+
+
+                    overlay.classList.add('hidden');
+
+
+                    startTimeline();
+
+
+                }, 200);
+
+
+            }
+
+
+
+
+
+            function handleConfirm() {
+
+
+                if (locked) return;
+
+
+                const val = input.value.trim();
+
+
+                if (val.toLowerCase() === CORRECT_KEY) {
+
+
+                    handleSuccess();
+
+
+                } else {
+
+
+                    handleError();
+
+
+                }
+
+
+            }
+
+
+
+
+
+            confirmBtn.addEventListener('click', handleConfirm);
+
+
+            input.addEventListener('keydown', function(e) {
+
+
+                if (e.key === 'Enter') {
+
+
+                    e.preventDefault();
+
+
+                    handleConfirm();
+
+
+                }
+
+
+            });
+
+
+
+
+
+            updateAttemptsDisplay();
+
+
+
+
+
+            input.addEventListener('click', function() {
+
+
+                if (window.forceWakeAudio) window.forceWakeAudio();
+
+
+            });
+
+
+            confirmBtn.addEventListener('click', function() {
+
+
+                if (window.forceWakeAudio) window.forceWakeAudio();
+
+
+            });
+
+
+        })();
+
+
+    </script>
+
+
+</body>
+
+
+</html>
